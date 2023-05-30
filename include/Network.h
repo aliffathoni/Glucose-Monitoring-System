@@ -34,10 +34,12 @@ void wifi_CONNECT(){
   pf.end();
   
   if(ssid=="" || pass=="" || uid==""){
+    Serial.print("[" + String(millis())+"] ");
     Serial.println("WiFi Credentials not found in memory!");
     delay(1000);
     reconnect();
   } else {
+    Serial.print("[" + String(millis())+"] ");
     Serial.print("Connecting to : ");
     Serial.println(ssid);
     // Serial.print("Password : ");
@@ -46,9 +48,10 @@ void wifi_CONNECT(){
     WiFi.begin(ssid.c_str(),pass.c_str());
     int connect_failed = 0;
     while(WiFi.status() != WL_CONNECTED){
-      Serial.println(".");
+      Serial.print(".");
       connect_failed++;
       if(connect_failed > 20) {
+        Serial.print("[" + String(millis())+"] ");
         Serial.println("Failed to connect!\nCheck your WiFi credentials...");
         reconnect();
       }
@@ -61,6 +64,7 @@ void wifi_CONNECT(){
     delay(100);
 
     Serial.println();
+    Serial.print("[" + String(millis())+"] ");
     Serial.println(WiFi.localIP());
 
     digitalWrite(23, HIGH);
@@ -82,11 +86,13 @@ void reconnect(){
   WiFi.mode(WIFI_OFF);
   delay(500);
 
+  Serial.print("[" + String(millis())+"] ");
   Serial.print("Opening server ");
   Serial.println(ssid_ap);
   WiFi.mode(WIFI_AP);
   WiFi.softAP(ssid_ap);
   IPAddress myIP = WiFi.softAPIP();
+  Serial.print("[" + String(millis())+"] ");
   Serial.print("AP IP address: ");
   Serial.println(myIP);
   server.begin();
@@ -96,6 +102,7 @@ void reconnect(){
     String s[3];
     
     if (client) {
+      Serial.print("[" + String(millis())+"] ");
       Serial.println("New Client.");
       String currentLine = "";
       while (client.connected()) {
@@ -108,11 +115,13 @@ void reconnect(){
               
               if(header.indexOf("GET /wifi") >= 0){
                 String b = header.substring(header.indexOf("?")+1, header.indexOf("+"));
+                Serial.print("[" + String(millis())+"] ");
                 Serial.print("ssid = ");
                 Serial.println(b);
                 s[0]=b;
                 b = header.substring(header.indexOf("+")+1, header.indexOf(" HTTP/1.1"));
                 s[1]=b;
+                Serial.print("[" + String(millis())+"] ");
                 Serial.print("pass = ");
                 Serial.println(b);
 
@@ -127,6 +136,7 @@ void reconnect(){
                 delay(100);
 
                 client.stop();
+                Serial.print("[" + String(millis())+"] ");
                 Serial.println("Client disconnected.");
                 Serial.println("");
 
@@ -138,6 +148,7 @@ void reconnect(){
               } else if(header.indexOf("GET /uid") >= 0){
                 String b = header.substring(header.indexOf("?")+1, header.indexOf(" HTTP/1.1"));
                 s[2]=b;
+                Serial.print("[" + String(millis())+"] ");
                 Serial.print("uid = ");
                 Serial.println(b);
 
@@ -151,6 +162,7 @@ void reconnect(){
                 delay(100);
 
                 client.stop();
+                Serial.print("[" + String(millis())+"] ");
                 Serial.println("Client disconnected.");
                 Serial.println("");
 
@@ -160,6 +172,7 @@ void reconnect(){
                 delay(100);
                               
               } else if(header.indexOf("GET /finish") >= 0){
+                Serial.print("[" + String(millis())+"] ");
                 Serial.println("Setting complete, returning to stand by mode");
                 
                 digitalWrite(23, HIGH);
@@ -168,6 +181,7 @@ void reconnect(){
                 delay(100);
 
                 client.stop();
+                Serial.print("[" + String(millis())+"] ");
                 Serial.println("Client disconnected.");
                 Serial.println("");
                 
@@ -200,8 +214,6 @@ void reconnect(){
       }
       header = "";
       client.stop();
-      Serial.println("Client disconnected.");
-      Serial.println("");
     }
   }
 }
