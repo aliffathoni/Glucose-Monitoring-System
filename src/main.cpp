@@ -1,33 +1,67 @@
 #include <Arduino.h>
 #include "Config.h"
 
+TaskHandle_t upload_handle;
+
+unsigned long lastUpload = 0;
+int counter = 1;
+
 void upload(void *param)
 {
-  while (1)
-  {
-    int dataMillis = millis();
-    if(uid!=""){
-      String path = "/test/" + uid;
-      
-      bool sent_status = Firebase.setInt(fb, path, dataMillis);
-      do{
-        Serial.println(fb.errorReason().c_str());
-        sent_status = Firebase.setInt(fb, path, dataMillis);
-      } while(sent_status == false);
-      
-      Serial.print("[" + String(millis())+"] ");
-      Serial.println("Data sent");
-      // Serial.printf("Set int... %s\n", Firebase.setInt(fb, path, dataMillis) ? "ok" : fb.errorReason().c_str());
-    } else{
-      Serial.printf("Set int... %s\n", Firebase.setInt(fb, "/test/int", dataMillis) ? "ok" : fb.errorReason().c_str());
+  for(;;){
+    while (counter <= 20)
+    {
+      int dataMillis = millis();
+      if(uid!=""){
+        String path = "/test/" + uid + "/";
+        if(counter < 10){
+          path+="00" + String(counter);
+        } else if(counter < 100){
+          path+="0" + String(counter);
+        } else{
+          path+=String(counter);
+        }
+        
+        bool sent_status = Firebase.setInt(fb, path, dataMillis);
+        do{
+          Serial.println(fb.errorReason().c_str());
+          sent_status = Firebase.setInt(fb, path, dataMillis);
+        } while(sent_status == false);
+        
+        Serial.print("[" + String(millis())+"] ");
+        Serial.print("[" + String(counter)+"] ");
+        
+        Serial.println("Data sent");
+        counter++;
+        // Serial.printf("Set int... %s\n", Firebase.setInt(fb, path, dataMillis) ? "ok" : fb.errorReason().c_str());
+      } else{
+        Serial.printf("Set int... %s\n", Firebase.setInt(fb, "/test/int", dataMillis) ? "ok" : fb.errorReason().c_str());
+      }
+
+      lastUpload = millis();
+
+      if(counter == 20){
+        Serial.print("[" + String(millis())+"] ");
+        Serial.println("Pause upload task");
+      }
+      vTaskDelay(700);
     }
-    vTaskDelay(2500);
+    // vTaskSuspend(NULL);
+    Serial.print("[" + String(millis())+"] ");
+    vTaskDelay(1000);
   }
 }
 
 void blink(void *param)
 {
   while(1){
+    if(millis() - lastUpload > 30000){
+      // vTaskResume(upload_handle);
+      counter = 1;
+      Serial.print("[" + String(millis())+"] ");
+      Serial.println("Resume upload task");
+    }
+
     digitalWrite(23, HIGH);
     vTaskDelay(250);
     digitalWrite(23, LOW);
@@ -49,8 +83,8 @@ void setup() {
   Serial.print("[" + String(millis())+"] ");
   Serial.println("Setup Completed");
 
-  xTaskCreate(upload, "Upload Task", 10000, NULL, 2, NULL);
-  xTaskCreate(blink, "Blink Task", 1024, NULL, 1, NULL);
+  xTaskCreate(upload, "Upload Task", 10000, NULL, 2, &upload_handle);
+  xTaskCreate(blink, "Blink Task", 5000, NULL, 1, NULL);
 }
 
 void loop() {
