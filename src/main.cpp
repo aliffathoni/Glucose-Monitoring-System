@@ -2,9 +2,25 @@
 #include "Config.h"
 
 TaskHandle_t upload_handle;
+TaskHandle_t blink_handle;
+TaskHandle_t sleep_handle;
 
 unsigned long lastUpload = 0;
 int counter = 1;
+
+void wakeup_reason()
+{
+    esp_sleep_wakeup_cause_t wakeup_reason;
+    wakeup_reason = esp_sleep_get_wakeup_cause();
+
+    switch(wakeup_reason)
+    {
+        case ESP_SLEEP_WAKEUP_EXT0 :
+            Serial.println("Wakeup caused by external signal using RTC_IO");
+            break;
+        default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+    }
+}
 
 void upload(void *param)
 {
@@ -47,8 +63,39 @@ void upload(void *param)
       vTaskDelay(700);
     }
     // vTaskSuspend(NULL);
-    Serial.print("[" + String(millis())+"] ");
+    Serial.println("[" + String(millis())+"] ");
     vTaskDelay(1000);
+  }
+}
+
+void sleep (void *param)
+{
+  pinMode(27, INPUT_PULLUP);
+  
+  while(1){
+    if(digitalRead(27) == LOW){
+      vTaskDelay(2000 / portTICK_PERIOD_MS);
+      if(digitalRead(27) == LOW){
+        rtc_gpio_pullup_en(GPIO_NUM_27);
+        esp_sleep_enable_ext0_wakeup(GPIO_NUM_27, 0);
+        Serial.println("Enter Sleeping Mode...");
+        tft.fillScreen(TFT_BLACK);
+        tft.drawString("Sleeping...", 80, 40, 4);
+        vTaskSuspend(upload_handle);
+        vTaskSuspend(blink_handle);
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+        esp_deep_sleep_start();
+      } else{
+        tft.fillScreen(TFT_BLACK);
+        tft.drawString("Button", 80, 25, 4);
+        tft.drawString("Pressed", 80, 55, 4);
+        vTaskSuspend(upload_handle);
+        vTaskSuspend(blink_handle);
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+        vTaskResume(upload_handle);
+        vTaskResume(blink_handle);
+      }
+    }
   }
 }
 
@@ -66,25 +113,59 @@ void blink(void *param)
     vTaskDelay(250);
     digitalWrite(23, LOW);
     vTaskDelay(250);
+
+    timeClient.update();
+    Serial.println("[T] "+timeClient.getFormattedDate());
+    
+    tft.fillScreen(TFT_BLACK);
+    tft.drawString(timeClient.getFormattedTime(), 80, 40, 4);
   }
 }
 
 void setup() {
   // put your setup code here, to run once:
-  pinMode(23, OUTPUT);
+  // pinMode(23, OUTPUT);
   Serial.begin(115200);
   
+  tft.init();
+  tft.setRotation(1);
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextDatum(CC_DATUM);
+  tft.setTextSize(1);
+  tft.drawString("Initialize", 80, 25, 4);
+  tft.drawString("Device", 80, 55, 4);
+  delay(2000);
+
+  wakeup_reason();
+
+  
+  tft.fillScreen(TFT_BLACK);
+  tft.drawString("Connecting", 80, 25, 4);
+  tft.drawString("Network", 80, 55, 4);
   Serial.print("[" + String(millis())+"] ");
   Serial.println("Connecting to saved connection...");
   wifi_CONNECT();
   // reconnect();
   
   delay(1000);
+
+  if(pox.begin()){
+    Serial.print("[" + String(millis())+"] ");
+    Serial.println("Sensor Detected");
+  }
+  
+  delay(1000);
+
+  tft.fillScreen(TFT_BLACK);
+  tft.drawString("Initialize", 80, 25, 4);
+  tft.drawString("Completed!", 80, 55, 4);
   Serial.print("[" + String(millis())+"] ");
   Serial.println("Setup Completed");
 
   xTaskCreate(upload, "Upload Task", 10000, NULL, 2, &upload_handle);
-  xTaskCreate(blink, "Blink Task", 5000, NULL, 1, NULL);
+  xTaskCreate(blink, "Blink Task", 5000, NULL, 1, &blink_handle);
+  xTaskCreate(sleep, "Sleep Task", 5000, NULL, 1, &sleep_handle);
 }
 
 void loop() {
