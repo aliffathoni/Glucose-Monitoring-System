@@ -5,9 +5,12 @@
 #include <FirebaseESP32.h>  //Firebase Library
 #include <NTPClient.h>
 #include <WiFiUdp.h>
+#include <addons/TokenHelper.h>
+#include <addons/RTDBHelper.h>
 
 #define DATABASE_URL "glucose-b9d1c-default-rtdb.firebaseio.com" //url firebase
 #define FIREBASE_AUTH "SzkT6Dphy7Sy1MWZYCNFCNLW6tQ5fBkO44gilMMC"            //credential firebase
+
 FirebaseData fb;
 FirebaseAuth auth;
 FirebaseConfig config;
@@ -28,17 +31,33 @@ void reconnect();
 void wifi_CONNECT(){
   
   pf.begin("credentials", false);
-  ssid = pf.getString("ssid", "");
-  pass = pf.getString("pass", "");
-  uid = pf.getString("uid", "");
+  counter = pf.getInt("counter", 0);
+  timeNow = pf.getString("time", "Sunday, 1 January 1990");
+  ssid = pf.getString("ssid", DEFAULT_SSID);
+  pass = pf.getString("pass", DEFAULT_PASS);
+  uid = pf.getString("uid", DEFAULT_UUID);
   pf.end();
-  
+
   if(ssid=="" || pass=="" || uid==""){
     Serial.print("[" + String(millis())+"] ");
     Serial.println("WiFi Credentials not found in memory!");
     delay(1000);
     reconnect();
   } else {
+    Serial.print("[" + String(millis())+"] ");
+    Serial.print("Last counter : ");
+    Serial.println(counter);
+
+    counter++;
+
+    Serial.print("[" + String(millis())+"] ");
+    Serial.print("Last upload : ");
+    Serial.println(timeNow);
+    
+    Serial.print("[" + String(millis())+"] ");
+    Serial.print("UID : ");
+    Serial.println(uid);
+
     Serial.print("[" + String(millis())+"] ");
     Serial.print("Connecting to : ");
     Serial.println(ssid);
@@ -52,25 +71,15 @@ void wifi_CONNECT(){
       connect_failed++;
       if(connect_failed > 20) {
         Serial.print("[" + String(millis())+"] ");
-        Serial.println("Failed to connect!\nCheck your WiFi credentials...");
+        Serial.println("Failed to connect! Check your WiFi credentials...");
         reconnect();
       }
       delay(500);
     }
 
-    digitalWrite(23, HIGH);
-    delay(100);
-    digitalWrite(23, LOW);
-    delay(100);
-
     Serial.println();
     Serial.print("[" + String(millis())+"] ");
     Serial.println(WiFi.localIP());
-
-    digitalWrite(23, HIGH);
-    delay(100);
-    digitalWrite(23, LOW);
-    delay(100);
     
     timeClient.begin();
     config.database_url = DATABASE_URL;
@@ -89,6 +98,11 @@ void reconnect(){
   Serial.print("[" + String(millis())+"] ");
   Serial.print("Opening server ");
   Serial.println(ssid_ap);
+
+  tft.fillScreen(TFT_BLACK);
+  tft.drawString("Access App", 80, 25, 4);
+  tft.drawString("192.168.4.1", 80, 55, 4);
+  
   WiFi.mode(WIFI_AP);
   WiFi.softAP(ssid_ap);
   IPAddress myIP = WiFi.softAPIP();
@@ -129,22 +143,12 @@ void reconnect(){
                 pf.putString("ssid", s[0]);
                 pf.putString("pass", s[1]);
                 pf.end();
-      
-                digitalWrite(23, HIGH);
-                delay(100);
-                digitalWrite(23, LOW);
-                delay(100);
-
+     
                 client.stop();
                 Serial.print("[" + String(millis())+"] ");
                 Serial.println("Client disconnected.");
                 Serial.println("");
-
-                digitalWrite(23, HIGH);
-                delay(100);
-                digitalWrite(23, LOW);
-                delay(100);
-                          
+                     
               } else if(header.indexOf("GET /uid") >= 0){
                 String b = header.substring(header.indexOf("?")+1, header.indexOf(" HTTP/1.1"));
                 s[2]=b;
@@ -156,59 +160,36 @@ void reconnect(){
                 pf.putString("uid", s[2]);
                 pf.end();
 
-                digitalWrite(23, HIGH);
-                delay(100);
-                digitalWrite(23, LOW);
-                delay(100);
-
                 client.stop();
                 Serial.print("[" + String(millis())+"] ");
                 Serial.println("Client disconnected.");
                 Serial.println("");
 
-                digitalWrite(23, HIGH);
-                delay(100);
-                digitalWrite(23, LOW);
-                delay(100);
-                              
               } else if(header.indexOf("GET /finish") >= 0){
                 Serial.print("[" + String(millis())+"] ");
                 Serial.println("Setting complete, returning to stand by mode");
                 
-                digitalWrite(23, HIGH);
-                delay(100);
-                digitalWrite(23, LOW);
-                delay(100);
-
                 client.stop();
                 Serial.print("[" + String(millis())+"] ");
                 Serial.println("Client disconnected.");
                 Serial.println("");
-                
-                digitalWrite(23, HIGH);
-                delay(100);
-                digitalWrite(23, LOW);
-                delay(100);
 
                 server.stop();
                 
                 WiFi.mode(WIFI_OFF);
-                
                 wifi_CONNECT();
-                
-                state=2;    
+  
                 connection_status = true;
               }
               
               // The HTTP response ends with another blank line
               client.println();
-              // Break out of the while loop
               break;
-            } else { // if you got a newline, then clear currentLine
+            } else {
               currentLine = "";
             }
-          } else if (c != '\r') {  // if you got anything else but a carriage return character,
-            currentLine += c;      // add it to the end of the currentLine
+          } else if (c != '\r') {
+            currentLine += c;
           }
         }
       }

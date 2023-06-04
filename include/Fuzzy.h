@@ -11,82 +11,82 @@ float Tinggi = 1;
 float minr[4];
 float Rule[4];
 
-float fuRendah(int bpm)
+float fuRendah(int glucose_value)
 {
-   if (bpm < uRendah[0])
+   if (glucose_value < uRendah[0])
     {
         return 0;
     }
-    else if (bpm >= uRendah[0] && bpm <= uRendah[1])
+    else if (glucose_value >= uRendah[0] && glucose_value <= uRendah[1])
     {
-        return (bpm - uRendah[0]) / (uRendah[1] - uRendah[0]);
+        return (glucose_value - uRendah[0]) / (uRendah[1] - uRendah[0]);
     }
-    else if (bpm >= uRendah[1] && bpm <= uRendah[2])
+    else if (glucose_value >= uRendah[1] && glucose_value <= uRendah[2])
     {
-        return (uRendah[2] - bpm) / (uRendah[2] - uRendah[1]);
+        return (uRendah[2] - glucose_value) / (uRendah[2] - uRendah[1]);
     }
-    // else if (bpm > uRendah[2])
+    // else if (glucose_value > uRendah[2])
     else  {
         return 0;
     }
 }
 
-float fuNormal(int bpm)
+float fuNormal(int glucose_value)
 {
-   if (bpm <= uNormal[0])
+   if (glucose_value <= uNormal[0])
     {
         return 0;
     }
-    else if (bpm >= uNormal[0] && bpm <= uNormal[1])
+    else if (glucose_value >= uNormal[0] && glucose_value <= uNormal[1])
     {
-        return (bpm - uNormal[0]) / (uNormal[1] - uNormal[0]);
+        return (glucose_value - uNormal[0]) / (uNormal[1] - uNormal[0]);
     }
-    else if (bpm >= uNormal[1] && bpm <= uNormal[2])
+    else if (glucose_value >= uNormal[1] && glucose_value <= uNormal[2])
     {
-        return (uNormal[2] - bpm) / (uNormal[2] - uNormal[1]);
+        return (uNormal[2] - glucose_value) / (uNormal[2] - uNormal[1]);
     }
-    // else if (bpm > uNormal[2])
+    // else if (glucose_value > uNormal[2])
     else  {
         return 0;
     }
 }
 
-float fuTinggi(int bpm)
+float fuTinggi(int glucose_value)
 {
-   if (bpm <= uTinggi[0])
+   if (glucose_value <= uTinggi[0])
     {
         return 0;
     }
-    else if (bpm >= uTinggi[0] && bpm <= uTinggi[1])
+    else if (glucose_value >= uTinggi[0] && glucose_value <= uTinggi[1])
     {
-        return (bpm - uTinggi[0]) / (uTinggi[1] - uTinggi[0]);
+        return (glucose_value - uTinggi[0]) / (uTinggi[1] - uTinggi[0]);
     }
-    else if (bpm >= uTinggi[1] && bpm <= uTinggi[2])
+    else if (glucose_value >= uTinggi[1] && glucose_value <= uTinggi[2])
     {
-        return (uTinggi[2] - bpm) / (uTinggi[2] - uTinggi[1]);
+        return (uTinggi[2] - glucose_value) / (uTinggi[2] - uTinggi[1]);
     }
-    // else if (bpm >= uTinggi[2])
+    // else if (glucose_value >= uTinggi[2])
     else    {
         return 0;
     }
 }
 
-void rule2(int bpm)
+void rule(int glucose_value)
 {
-  // if bpm rendah then rendah
-  minr[1] = fuRendah(bpm);
+  // if glucose_value rendah then rendah
+  minr[1] = fuRendah(glucose_value);
   Rule[1] = Rendah;
-  // if bpm normal then normal
-  minr[2] = fuNormal(bpm);
+  // if glucose_value normal then normal
+  minr[2] = fuNormal(glucose_value);
   Rule[2] = Normal;
-  // if bpm tinggi then tinggi
-  minr[3] = fuTinggi(bpm);
+  // if glucose_value tinggi then tinggi
+  minr[3] = fuTinggi(glucose_value);
   Rule[3] = Tinggi;
 }
 
-float defuzzyfikasi2(int bpm)
+float defuzzyfikasi(int glucose_value)
 {
-  rule2(bpm);
+  rule(glucose_value);
   A = 0;
   B = 0;
 
@@ -102,13 +102,13 @@ float defuzzyfikasi2(int bpm)
   return A / B;
 }
 
-String fuzzy_bpm(int bpm)
+String fuzzy_glucose(int glucose_value)
 {
-  float keputusan = defuzzyfikasi2(bpm);
+  float keputusan = defuzzyfikasi(glucose_value);
   String msg;
 
-  Serial.print("Hasil Keputusan Defuzzyfikasi : ");
-  Serial.println(keputusan);
+  // Serial.print("Hasil Keputusan Defuzzyfikasi : ");
+  // Serial.print(keputusan);
   if (keputusan >= 0 && keputusan < 0.5) {
     msg = "Rendah";
   } else if (keputusan >= 0.5 && keputusan < 1) {
@@ -118,6 +118,7 @@ String fuzzy_bpm(int bpm)
   } else{
     msg = "Error";
   }
-  Serial.println("Status_bpm : "+msg);
+  // Serial.print("Status_glucose_value : ");
+  // Serial.println(msg);
   return msg;
 }
