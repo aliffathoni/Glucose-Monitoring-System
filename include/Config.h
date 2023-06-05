@@ -34,8 +34,6 @@ PNG png; // PNG decoder inatance
 #include <Wire.h>
 #include "driver/rtc_io.h"
 #include "MAX30100_PulseOximeter.h"
-#include "Network.h"
-#include "Fuzzy.h"
 
 PulseOximeter pox;
 
@@ -54,7 +52,35 @@ void boot_init(){
     rc = png.decode(NULL, 0);
     tft.endWrite();
   }
-  delay(1500);
+  delay(2000);
 }
+
+void backToSleep(){
+  if(digitalRead(27) == LOW){
+    
+    tft.fillScreen(TFT_BLACK);
+    tft.drawString("Button", 80, 25, 4);
+    tft.drawString("Pressed", 80, 55, 4);
+    
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    tft.fillScreen(TFT_BLACK);
+
+    rtc_gpio_pullup_en(GPIO_NUM_27);
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_27, 0);
+    
+    Serial.print("[" + String(millis())+"] ");
+    Serial.println("Enter Sleeping Mode In 2 Second...");
+    
+    tft.fillScreen(TFT_BLACK);
+    tft.drawString("Sleeping...", 80, 40, 4);
+    
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    
+    esp_deep_sleep_start();
+  }
+}
+
+#include "Network.h"
+#include "Fuzzy.h"
 
 #endif

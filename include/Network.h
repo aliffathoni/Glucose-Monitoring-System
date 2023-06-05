@@ -26,6 +26,8 @@ WiFiServer server(80);
 
 String header;
 
+unsigned long lastConnect = 0;
+
 void reconnect();
 
 void wifi_CONNECT(){
@@ -110,6 +112,7 @@ void reconnect(){
   Serial.print("AP IP address: ");
   Serial.println(myIP);
   server.begin();
+  lastConnect = millis();
 
   while(connection_status == false){
     WiFiClient client = server.available();
@@ -148,7 +151,8 @@ void reconnect(){
                 Serial.print("[" + String(millis())+"] ");
                 Serial.println("Client disconnected.");
                 Serial.println("");
-                     
+                lastConnect = millis();
+
               } else if(header.indexOf("GET /uid") >= 0){
                 String b = header.substring(header.indexOf("?")+1, header.indexOf(" HTTP/1.1"));
                 s[2]=b;
@@ -164,6 +168,8 @@ void reconnect(){
                 Serial.print("[" + String(millis())+"] ");
                 Serial.println("Client disconnected.");
                 Serial.println("");
+                
+                lastConnect = millis();
 
               } else if(header.indexOf("GET /finish") >= 0){
                 Serial.print("[" + String(millis())+"] ");
@@ -195,6 +201,31 @@ void reconnect(){
       }
       header = "";
       client.stop();
+    }
+  
+    backToSleep();
+
+    if(millis() - lastConnect > 30000){
+      tft.fillScreen(TFT_BLACK);
+      tft.drawString("Network", 80, 25, 4);
+      tft.drawString("Failed", 80, 55, 4);
+      
+      vTaskDelay(2000 / portTICK_PERIOD_MS);
+      tft.fillScreen(TFT_BLACK);
+
+      rtc_gpio_pullup_en(GPIO_NUM_27);
+      esp_sleep_enable_ext0_wakeup(GPIO_NUM_27, 0);
+      
+      Serial.print("[" + String(millis())+"] ");
+      Serial.println("Enter Sleeping Mode In 2 Second...");
+      
+      tft.fillScreen(TFT_BLACK);
+      tft.drawString("Back to", 80, 25, 4);
+      tft.drawString("Sleep Mode", 80, 55, 4);
+      
+      vTaskDelay(2000 / portTICK_PERIOD_MS);
+      
+      esp_deep_sleep_start();
     }
   }
 }
