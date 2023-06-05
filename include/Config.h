@@ -5,6 +5,10 @@ String DEFAULT_SSID = "3DPractical";
 String DEFAULT_PASS = "embeddedelectronics";
 String DEFAULT_UUID = "abcdefg";
 
+const float bpm_calibration = 0.7;
+const float spo_calibration = 1.0;
+const float glu_calibration = 1.0;
+
 String ssid, pass, uid;
 bool connection_status = false;
 int counter = 1;
@@ -20,6 +24,8 @@ int spo_rate = 0;
 
 int bpm, spo2, glucose;
 String fuzzy_result;
+
+bool offline_mode = false;
 
 #include <SPI.h>
 #include "TFT_eSPI.h"

@@ -103,17 +103,21 @@ void update_data()
   }
 
   if(millis() - lastUpdate > 300){    
-    bpm = bpm_rate / dataCounter;
-    spo2 = spo_rate / dataCounter;
-    glucose = bpm * 140 / 120;
+    bpm = (bpm_rate / dataCounter) * bpm_calibration;
+    spo2 = (spo_rate / dataCounter) * spo_calibration;
+    glucose = (bpm * 140 / 120) * glu_calibration;
     fuzzy_result = fuzzy_glucose(glucose);
 
     Serial.print("[" + String(millis())+"] ");
     Serial.printf("Total Data = %d || BPM = %d || SPO2 = %d% || Glucose = %d || Fuzzy Result = %s\n", dataCounter, bpm, spo2, glucose, fuzzy_result);
     
     String printValue = "  SPO2 "+String(spo2)+"% | Glu "+String(glucose) + "  ";
-    
     tft.drawString(printValue, 80, 55, 2);
+
+    if(offline_mode == true){
+      String fress = "  "+fuzzy_result+"  ";
+      tft.drawString(fress, 80, 25, 4);
+    }
 
     dataCounter = 1;
     bpm_rate = 0;
@@ -130,18 +134,23 @@ void main_task(void *param)
       pox.update();
       update_data();
     } else{
-      pox.shutdown();
-      update_time();
+      if(offline_mode == false){
+        pox.shutdown();
+        update_time();
+        
+        if(glucose!=0 && spo2!=0){
+          upload();
+        }
       
-      if(glucose!=0 && spo2!=0){
-        upload();
+        pox.resume();
       }
       
       update_state = true;
-      pox.resume();
     }
 
     if(millis() - changeState > 5000){
+      Serial.print("[" + String(millis())+"] ");
+      Serial.println("Setup Completed");
       update_state = false;
       changeState = millis();
     }
@@ -200,6 +209,18 @@ void setup() {
 
   boot_init();
 
+  if(digitalRead(27) == LOW){
+    offline_mode = true;
+    
+    Serial.print("[" + String(millis())+"] ");
+    Serial.println("Offline Mode Actived");
+
+    tft.fillScreen(TFT_BLACK);
+    tft.drawString("Offline", 80, 25, 4);
+    tft.drawString("Mode", 80, 55, 4);
+    delay(2000);
+  }
+
   tft.fillScreen(TFT_BLACK);
   tft.drawString("Initialize", 80, 25, 4);
   tft.drawString("Device", 80, 55, 4);
@@ -207,14 +228,15 @@ void setup() {
 
   wakeup_reason();
   
-  tft.fillScreen(TFT_BLACK);
-  tft.drawString("Connecting", 80, 25, 4);
-  tft.drawString("Network", 80, 55, 4);
-  Serial.print("[" + String(millis())+"] ");
-  Serial.println("Connecting to saved connection...");
-  wifi_CONNECT();
-  // reconnect();
-  
+  if(offline_mode == false){
+    tft.fillScreen(TFT_BLACK);
+    tft.drawString("Connecting", 80, 25, 4);
+    tft.drawString("Network", 80, 55, 4);
+    Serial.print("[" + String(millis())+"] ");
+    Serial.println("Connecting to saved connection...");
+    wifi_CONNECT();
+    // reconnect();
+  }
   delay(1000);
 
   tft.fillScreen(TFT_BLACK);
@@ -225,7 +247,9 @@ void setup() {
  
   delay(1000);
   tft.fillScreen(TFT_BLACK);
-  update_time();
+  if(offline_mode == false){
+    update_time();
+  }
   
   if(pox.begin()){
     Serial.print("[" + String(millis())+"] ");
