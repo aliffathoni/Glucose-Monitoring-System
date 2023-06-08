@@ -101,9 +101,7 @@ void reconnect(){
   Serial.print("Opening server ");
   Serial.println(ssid_ap);
 
-  tft.fillScreen(TFT_BLACK);
-  tft.drawString("Access App", 80, 25, 4);
-  tft.drawString("192.168.4.1", 80, 55, 4);
+  drawAP();
   
   WiFi.mode(WIFI_AP);
   WiFi.softAP(ssid_ap);
@@ -206,22 +204,14 @@ void reconnect(){
     backToSleep();
 
     if(millis() - lastConnect > 30000){
-      tft.fillScreen(TFT_BLACK);
-      tft.drawString("Network", 80, 25, 4);
-      tft.drawString("Failed", 80, 55, 4);
       
-      vTaskDelay(2000 / portTICK_PERIOD_MS);
-      tft.fillScreen(TFT_BLACK);
+      drawSleep();
 
       rtc_gpio_pullup_en(GPIO_NUM_27);
       esp_sleep_enable_ext0_wakeup(GPIO_NUM_27, 0);
       
       Serial.print("[" + String(millis())+"] ");
       Serial.println("Enter Sleeping Mode In 2 Second...");
-      
-      tft.fillScreen(TFT_BLACK);
-      tft.drawString("Back to", 80, 25, 4);
-      tft.drawString("Sleep Mode", 80, 55, 4);
       
       vTaskDelay(2000 / portTICK_PERIOD_MS);
       

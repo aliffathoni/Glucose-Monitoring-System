@@ -1,8 +1,10 @@
 #ifndef CONFIG_h_
 #define CONFIG_h_
 
-String DEFAULT_SSID = "3DPractical";
-String DEFAULT_PASS = "embeddedelectronics";
+#include <Arduino.h>
+
+String DEFAULT_SSID = "Raddinii";
+String DEFAULT_PASS = "raddinii0711";
 String DEFAULT_UUID = "abcdefg";
 
 const float bpm_calibration = 0.7;
@@ -22,20 +24,15 @@ int dataCounter = 1;
 int bpm_rate = 0;
 int spo_rate = 0;
 
-int bpm, spo2, glucose;
+int bpm, spo2, glucose, batt;
 String fuzzy_result;
 
 bool offline_mode = false;
 
-#include <SPI.h>
-#include "TFT_eSPI.h"
+const int max_volt_batt = 3134;
+const int min_volt_batt = 2800;
 
-TFT_eSPI tft = TFT_eSPI();  // Invoke custom library
-
-#include <PNGdec.h>
-#include "Image.h" // Image is stored here in an 8 bit array
-
-PNG png; // PNG decoder inatance
+#include "Graphic.h"
 
 #include <Wire.h>
 #include "driver/rtc_io.h"
@@ -43,43 +40,17 @@ PNG png; // PNG decoder inatance
 
 PulseOximeter pox;
 
-void pngDraw(PNGDRAW *pDraw) {
-  uint16_t lineBuffer[240];
-  png.getLineAsRGB565(pDraw, lineBuffer, PNG_RGB565_BIG_ENDIAN, 0xffffffff);
-  tft.pushImage(57, 5 + pDraw->y, pDraw->iWidth, 1, lineBuffer);
-}
-
-void boot_init(){
-  // tft.setFreeFont(&FreeSans9pt7b);
-  tft.fillScreen(0x000000);
-  int16_t rc = png.openFLASH((uint8_t *)logo, sizeof(logo), pngDraw);
-  if (rc == PNG_SUCCESS) {
-    tft.startWrite();
-    rc = png.decode(NULL, 0);
-    tft.endWrite();
-  }
-  delay(2000);
-}
-
 void backToSleep(){
   if(digitalRead(27) == LOW){
     
-    tft.fillScreen(TFT_BLACK);
-    tft.drawString("Button", 80, 25, 4);
-    tft.drawString("Pressed", 80, 55, 4);
-    
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
-    tft.fillScreen(TFT_BLACK);
+    drawSleep();
 
     rtc_gpio_pullup_en(GPIO_NUM_27);
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_27, 0);
     
     Serial.print("[" + String(millis())+"] ");
     Serial.println("Enter Sleeping Mode In 2 Second...");
-    
-    tft.fillScreen(TFT_BLACK);
-    tft.drawString("Sleeping...", 80, 40, 4);
-    
+
     vTaskDelay(2000 / portTICK_PERIOD_MS);
     
     esp_deep_sleep_start();

@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include "Config.h"
 
 TaskHandle_t main_handle;
@@ -6,6 +5,7 @@ TaskHandle_t sleep_handle;
 
 void onBeatDetected(){
   Serial.println("..");
+  //Add beat animation
 }
 
 void wakeup_reason()
@@ -37,7 +37,7 @@ void upload()
     
     String path_bpm = path + "/Bpm/";
     bool sent_status = Firebase.setInt(fb, path_bpm, bpm);
-    if(sent_status){
+    if(sent_status == false){
       Serial.println(fb.errorReason().c_str());
     } else{
       Serial.print("[" + String(millis())+"] ");
@@ -47,7 +47,7 @@ void upload()
 
     String path_spo2 = path + "/Oksigen/";
     sent_status = Firebase.setInt(fb, path_spo2, spo2);
-    if(sent_status){
+    if(sent_status == false){
       Serial.println(fb.errorReason().c_str());
     } else{
       Serial.print("[" + String(millis())+"] ");
@@ -57,7 +57,7 @@ void upload()
 
     String path_glucose = path + "/Gula/";
     sent_status = Firebase.setInt(fb, path_glucose, glucose);
-    if(sent_status){
+    if(sent_status == false){
       Serial.println(fb.errorReason().c_str());
     } else{
       Serial.print("[" + String(millis())+"] ");
@@ -65,15 +65,16 @@ void upload()
       Serial.println("Glucose Data sent");
     }
     
-    String path_fuzzy = path + "/Status/";
-    sent_status = Firebase.setString(fb, path_fuzzy, fuzzy_result);
-    if(sent_status){
-      Serial.println(fb.errorReason().c_str());
-    } else{
-      Serial.print("[" + String(millis())+"] ");
-      Serial.print("[" + String(counter)+"] ");
-      Serial.println("Fuzzy Data sent");
-    }
+    // String path_fuzzy = path + "/Status/";
+    // sent_status = Firebase.setString(fb, path_fuzzy, fuzzy_result);
+    // if(sent_status == false){
+    //   Serial.println(fb.errorReason().c_str());
+    // } else{
+    //   Serial.print("[" + String(millis())+"] ");
+    //   Serial.print("[" + String(counter)+"] ");
+    //   Serial.println("Fuzzy Data sent");
+    // }
+
   }
 }
 
@@ -87,8 +88,6 @@ void update_time()
     timeNow = timeClient.getFormattedDate();
     counter = 1;
   }
-
-  tft.drawString(timeClient.getFormattedTime(), 80, 25, 4);
 }
 
 void update_data()
@@ -102,27 +101,24 @@ void update_data()
     spo_rate+=spo_dump;
   }
 
+  //Get batt value
+
   if(millis() - lastUpdate > 300){    
     bpm = (bpm_rate / dataCounter) * bpm_calibration;
     spo2 = (spo_rate / dataCounter) * spo_calibration;
     glucose = (bpm * 140 / 120) * glu_calibration;
     fuzzy_result = fuzzy_glucose(glucose);
+    batt = ((analogReadMilliVolts(36) - min_volt_batt) / (max_volt_batt - min_volt_batt)) * 100;
 
     Serial.print("[" + String(millis())+"] ");
-    Serial.printf("Total Data = %d || BPM = %d || SPO2 = %d% || Glucose = %d || Fuzzy Result = %s\n", dataCounter, bpm, spo2, glucose, fuzzy_result);
+    Serial.printf("Total Data = %d || BPM = %d || SPO2 = %d% || Glucose = %d || Fuzzy Result = %s || Battery = %d\n", dataCounter, bpm, spo2, glucose, fuzzy_result, batt);
     
-    String printValue = "  SPO2 "+String(spo2)+"% | Glu "+String(glucose) + "  ";
-    tft.drawString(printValue, 80, 55, 2);
-
-    if(offline_mode == true){
-      String fress = "  "+fuzzy_result+"  ";
-      tft.drawString(fress, 80, 25, 4);
-    }
-
     dataCounter = 1;
     bpm_rate = 0;
     spo_rate = 0;
     
+    drawValue(spo2, glucose, batt, offline_mode);
+
     lastUpdate = millis();
   }
 }
@@ -133,11 +129,13 @@ void main_task(void *param)
     if(update_state == true){
       pox.update();
       update_data();
+      //Add value update
     } else{
       if(offline_mode == false){
         pox.shutdown();
         update_time();
-        
+        //Add sent status icon
+
         if(glucose!=0 && spo2!=0){
           upload();
         }
@@ -165,13 +163,8 @@ void sleep_task(void *param)
       
       vTaskSuspend(main_handle);
       
-      tft.fillScreen(TFT_BLACK);
-      tft.drawString("Button", 80, 25, 4);
-      tft.drawString("Pressed", 80, 55, 4);
+      drawSleep();
       
-      vTaskDelay(2000 / portTICK_PERIOD_MS);
-      tft.fillScreen(TFT_BLACK);
-        
       pf.begin("credentials", false);
       pf.putInt("counter", counter);
       pf.putString("time", timeNow);
@@ -182,9 +175,6 @@ void sleep_task(void *param)
       
       Serial.print("[" + String(millis())+"] ");
       Serial.println("Enter Sleeping Mode In 2 Second...");
-      
-      tft.fillScreen(TFT_BLACK);
-      tft.drawString("Sleeping...", 80, 40, 4);
       
       vTaskDelay(2000 / portTICK_PERIOD_MS);
       
@@ -200,14 +190,9 @@ void setup() {
   Serial.begin(115200);
   pinMode(27, INPUT_PULLUP);
   
-  tft.init();
-  tft.setRotation(1);
-  tft.fillScreen(TFT_BLACK);
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextDatum(CC_DATUM);
-  tft.setTextSize(1);
+  initTFT();
 
-  boot_init();
+  drawLogo();
 
   if(digitalRead(27) == LOW){
     offline_mode = true;
@@ -215,23 +200,16 @@ void setup() {
     Serial.print("[" + String(millis())+"] ");
     Serial.println("Offline Mode Actived");
 
-    tft.fillScreen(TFT_BLACK);
-    tft.drawString("Offline", 80, 25, 4);
-    tft.drawString("Mode", 80, 55, 4);
+    drawOffline();
     delay(2000);
   }
 
-  tft.fillScreen(TFT_BLACK);
-  tft.drawString("Initialize", 80, 25, 4);
-  tft.drawString("Device", 80, 55, 4);
-  delay(2000);
+  drawInit();
 
   wakeup_reason();
   
   if(offline_mode == false){
-    tft.fillScreen(TFT_BLACK);
-    tft.drawString("Connecting", 80, 25, 4);
-    tft.drawString("Network", 80, 55, 4);
+    drawConnect();
     Serial.print("[" + String(millis())+"] ");
     Serial.println("Connecting to saved connection...");
     wifi_CONNECT();
@@ -239,14 +217,12 @@ void setup() {
   }
   delay(1000);
 
-  tft.fillScreen(TFT_BLACK);
-  tft.drawString("Initialize", 80, 25, 4);
-  tft.drawString("Completed!", 80, 55, 4);
+  drawInitialized();
   Serial.print("[" + String(millis())+"] ");
   Serial.println("Setup Completed");
  
   delay(1000);
-  tft.fillScreen(TFT_BLACK);
+  
   if(offline_mode == false){
     update_time();
   }
@@ -254,6 +230,22 @@ void setup() {
   if(pox.begin()){
     Serial.print("[" + String(millis())+"] ");
     Serial.println("Sensor Detected");
+  } else {
+    Serial.print("[" + String(millis())+"] ");
+    Serial.println("Sensor not detected");
+    
+    tft.fillScreen(TFT_BLACK);
+    tft.drawString("Sensor Error", 0, 0, 1);
+    tft.drawString("Restarting", 0, 20, 1);
+
+    delay(1500);
+
+    Serial.print("[" + String(millis())+"] ");
+    Serial.println("Restart device");
+    
+    delay(500);
+
+    ESP.restart();
   }
 
   pox.setOnBeatDetectedCallback(onBeatDetected);  
