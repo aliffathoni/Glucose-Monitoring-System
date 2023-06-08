@@ -234,11 +234,7 @@ void setup() {
     Serial.print("[" + String(millis())+"] ");
     Serial.println("Sensor not detected");
     
-    tft.fillScreen(TFT_BLACK);
-    tft.drawString("Sensor Error", 0, 0, 1);
-    tft.drawString("Restarting", 0, 20, 1);
-
-    delay(1500);
+    drawError();
 
     Serial.print("[" + String(millis())+"] ");
     Serial.println("Restart device");

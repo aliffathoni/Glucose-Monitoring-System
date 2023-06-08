@@ -126,6 +126,12 @@ void drawOffline(){
     delay(1500);
 }
 
+void drawError(){
+    bgSprite.pushImage(0, 0, 80, 160, _device_error); 
+    bgSprite.pushSprite(0,0);
+    delay(1500);
+}
+
 void drawLogo(){
     bgSprite.pushImage(0, 0, 80, 80, _3dp_logo); 
     bgSprite.pushImage(0, 80, 80, 160, app_logo);
