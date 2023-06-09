@@ -41,21 +41,18 @@ void drawValue(int spo2_value, int glu_value, int batt_value, bool net_state){
         imgSprite.pushImage(3, 0, 15, 15, _online);
     }
     
-    // if(digitalRead(15) == LOW){
-    //   imgSprite.pushImage(62, 0, 15, 15, batt_charging);
-    // } else{
-        if(batt_value > 99){
-            imgSprite.pushImage(62, 0, 15, 15, batt_full);
-        } else if(batt_value < 100 && batt_value >= 85){
-            imgSprite.pushImage(62, 0, 15, 15, batt_85);
-        } else if(batt_value < 85 && batt_value >= 50){
-            imgSprite.pushImage(62, 0, 15, 15, batt_50);
-        } else if(batt_value < 50 && batt_value >= 20){
-            imgSprite.pushImage(62, 0, 15, 15, batt_20);
-        } else{
-            imgSprite.pushImage(62, 0, 15, 15, batt_5);
-        }
-    // }
+    if(batt_value >= 3128){
+        imgSprite.pushImage(62, 0, 15, 15, batt_full);
+    } else if(batt_value < 3128 && batt_value >= 3100){
+        imgSprite.pushImage(62, 0, 15, 15, batt_85);
+    } else if(batt_value < 3100 && batt_value >= 3000){
+        imgSprite.pushImage(62, 0, 15, 15, batt_50);
+    } else if(batt_value < 3000 && batt_value >= 2900){
+        imgSprite.pushImage(62, 0, 15, 15, batt_20);
+    } else{
+        imgSprite.pushImage(62, 0, 15, 15, batt_5);
+    }
+    
     imgSprite.pushToSprite(&bgSprite, 0, 0, TFT_BLACK);
 
     textSprite.fillSprite(TFT_BLACK);

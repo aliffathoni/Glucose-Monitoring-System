@@ -1,3 +1,6 @@
+#ifndef FUZZY_h_
+#define FUZZY_h_
+
 float A, B;
 
 float uRendah[] = {40, 50, 60};
@@ -122,3 +125,5 @@ String fuzzy_glucose(int glucose_value)
   // Serial.println(msg);
   return msg;
 }
+
+#endif

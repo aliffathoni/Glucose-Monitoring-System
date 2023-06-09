@@ -17,6 +17,7 @@ void wakeup_reason()
     {
         case ESP_SLEEP_WAKEUP_EXT0 :
             Serial.println("Wakeup caused by external signal using RTC_IO");
+            if(offline_mode == false) counter++;
             break;
         default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
     }
@@ -64,17 +65,6 @@ void upload()
       Serial.print("[" + String(counter)+"] ");
       Serial.println("Glucose Data sent");
     }
-    
-    // String path_fuzzy = path + "/Status/";
-    // sent_status = Firebase.setString(fb, path_fuzzy, fuzzy_result);
-    // if(sent_status == false){
-    //   Serial.println(fb.errorReason().c_str());
-    // } else{
-    //   Serial.print("[" + String(millis())+"] ");
-    //   Serial.print("[" + String(counter)+"] ");
-    //   Serial.println("Fuzzy Data sent");
-    // }
-
   }
 }
 
@@ -101,24 +91,22 @@ void update_data()
     spo_rate+=spo_dump;
   }
 
-  //Get batt value
-
-  if(millis() - lastUpdate > 300){    
+  if(millis() - lastUpdate > updateRoutine){    
     bpm = (bpm_rate / dataCounter) * bpm_calibration;
     spo2 = (spo_rate / dataCounter) * spo_calibration;
     glucose = (bpm * 140 / 120) * glu_calibration;
     fuzzy_result = fuzzy_glucose(glucose);
-    batt = ((analogReadMilliVolts(36) - min_volt_batt) / (max_volt_batt - min_volt_batt)) * 100;
+    batt = (analogReadMilliVolts(36));
 
     Serial.print("[" + String(millis())+"] ");
     Serial.printf("Total Data = %d || BPM = %d || SPO2 = %d% || Glucose = %d || Fuzzy Result = %s || Battery = %d\n", dataCounter, bpm, spo2, glucose, fuzzy_result, batt);
     
+    drawValue(spo2, glucose, batt, offline_mode);
+
     dataCounter = 1;
     bpm_rate = 0;
     spo_rate = 0;
     
-    drawValue(spo2, glucose, batt, offline_mode);
-
     lastUpdate = millis();
   }
 }
@@ -129,12 +117,10 @@ void main_task(void *param)
     if(update_state == true){
       pox.update();
       update_data();
-      //Add value update
     } else{
       if(offline_mode == false){
         pox.shutdown();
         update_time();
-        //Add sent status icon
 
         if(glucose!=0 && spo2!=0){
           upload();
@@ -146,7 +132,7 @@ void main_task(void *param)
       update_state = true;
     }
 
-    if(millis() - changeState > 5000){
+    if(millis() - changeState > uploadRoutine){
       Serial.print("[" + String(millis())+"] ");
       Serial.println("Setup Completed");
       update_state = false;
@@ -205,8 +191,6 @@ void setup() {
   }
 
   drawInit();
-
-  wakeup_reason();
   
   if(offline_mode == false){
     drawConnect();
@@ -216,6 +200,8 @@ void setup() {
     // reconnect();
   }
   delay(1000);
+  
+  wakeup_reason();
 
   drawInitialized();
   Serial.print("[" + String(millis())+"] ");

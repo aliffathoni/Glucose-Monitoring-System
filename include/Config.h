@@ -15,7 +15,6 @@ String ssid, pass, uid;
 bool connection_status = false;
 int counter = 1;
 unsigned long lastUpdate = 0;
-unsigned long lastUpload = 0;
 unsigned long changeState = 0;
 bool update_state = true;
 
@@ -31,6 +30,10 @@ bool offline_mode = false;
 
 const int max_volt_batt = 3134;
 const int min_volt_batt = 2800;
+
+unsigned long networkTimeout = 60000;
+unsigned long updateRoutine = 300;
+unsigned long uploadRoutine = 5000;
 
 #include "Graphic.h"
 

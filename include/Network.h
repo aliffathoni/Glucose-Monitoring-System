@@ -1,3 +1,6 @@
+#ifndef NETWORK_h_
+#define NETWORK_h_
+
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WiFiAP.h>
@@ -49,8 +52,6 @@ void wifi_CONNECT(){
     Serial.print("[" + String(millis())+"] ");
     Serial.print("Last counter : ");
     Serial.println(counter);
-
-    counter++;
 
     Serial.print("[" + String(millis())+"] ");
     Serial.print("Last upload : ");
@@ -203,7 +204,7 @@ void reconnect(){
   
     backToSleep();
 
-    if(millis() - lastConnect > 30000){
+    if(millis() - lastConnect > networkTimeout){
       
       drawSleep();
 
@@ -219,3 +220,5 @@ void reconnect(){
     }
   }
 }
+
+#endif
