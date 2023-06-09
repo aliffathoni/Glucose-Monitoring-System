@@ -31,7 +31,7 @@ void initTFT(){
     textSprite.createSprite(80, 160);
 }
 
-void drawValue(int spo2_value, int glu_value, int batt_value, bool net_state){
+void drawValue(int bpm_value, int spo2_value, int glu_value, int batt_value, bool net_state){
     bgSprite.fillSprite(TFT_BLACK);
 
     imgSprite.fillSprite(TFT_BLACK);
@@ -59,7 +59,11 @@ void drawValue(int spo2_value, int glu_value, int batt_value, bool net_state){
 
     textSprite.setTextDatum(TL_DATUM);
     textSprite.setTextColor(TFT_ORANGE, TFT_BLACK);
-    textSprite.drawString("Oksigen", 3, 20, 2);
+    if(view_state < 9){
+        textSprite.drawString("Oksigen", 3, 20, 2);
+    } else{
+        textSprite.drawString("BPM", 3, 20, 2);
+    }
     textSprite.setTextColor(TFT_PURPLE, TFT_BLACK);
     textSprite.drawString("Glukosa", 3, 95, 2);
     
@@ -67,15 +71,32 @@ void drawValue(int spo2_value, int glu_value, int batt_value, bool net_state){
     textSprite.fillRect(3, 17, 74, 2, TFT_WHITE);
 
     textSprite.setTextDatum(BR_DATUM);
-    if(spo2_value >= 95){
-      textSprite.setTextColor(GREEN, TFT_BLACK);
-    } else if(spo2_value < 95 && spo2_value > 90){
-      textSprite.setTextColor(YELLOW, TFT_BLACK);
+    if(view_state < 9){
+        if(spo2_value >= 95){
+            textSprite.setTextColor(GREEN, TFT_BLACK);
+        } else if(spo2_value < 95 && spo2_value > 90){
+            textSprite.setTextColor(YELLOW, TFT_BLACK);
+        } else{
+            textSprite.setTextColor(RED, TFT_BLACK);
+        }
+        
+        textSprite.drawString(String(spo2_value), 80, 87, 7);
     } else{
-      textSprite.setTextColor(RED, TFT_BLACK);
+        if(bpm_value >= 120){
+            textSprite.setTextColor(RED, TFT_BLACK);
+        } else if(bpm_value < 120 && bpm_value >= 90){
+            textSprite.setTextColor(YELLOW, TFT_BLACK);
+        } else if(bpm_value < 90 && bpm_value >= 70){
+            textSprite.setTextColor(GREEN, TFT_BLACK);
+        } else if(bpm_value < 70 && bpm_value >= 50){
+            textSprite.setTextColor(YELLOW, TFT_BLACK);
+        } else{
+            textSprite.setTextColor(RED, TFT_BLACK);
+        }
+        
+        textSprite.drawString(String(bpm_value), 80, 87, 7);
     }
-    textSprite.drawString(String(spo2_value), 80, 87, 7);
-    
+
     if(glu_value > 140){
       textSprite.setTextColor(RED, TFT_BLACK);
     } else if(glu_value <= 140 && glu_value > 90){

@@ -26,6 +26,8 @@ int spo_rate = 0;
 int bpm, spo2, glucose, batt;
 String fuzzy_result;
 
+int view_state = 0;
+
 bool offline_mode = false;
 
 const int max_volt_batt = 3134;

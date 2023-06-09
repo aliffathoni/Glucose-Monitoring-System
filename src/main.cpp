@@ -101,12 +101,15 @@ void update_data()
     Serial.print("[" + String(millis())+"] ");
     Serial.printf("Total Data = %d || BPM = %d || SPO2 = %d% || Glucose = %d || Fuzzy Result = %s || Battery = %d\n", dataCounter, bpm, spo2, glucose, fuzzy_result, batt);
     
-    drawValue(spo2, glucose, batt, offline_mode);
+    drawValue(bpm, spo2, glucose, batt, offline_mode);
 
     dataCounter = 1;
     bpm_rate = 0;
     spo_rate = 0;
     
+    view_state++;
+    if(view_state > 18) view_state = 0;
+
     lastUpdate = millis();
   }
 }
