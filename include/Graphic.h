@@ -71,7 +71,7 @@ void drawValue(int bpm_value, int spo2_value, int glu_value, int batt_value, boo
     textSprite.fillRect(3, 17, 74, 2, TFT_WHITE);
 
     textSprite.setTextDatum(BR_DATUM);
-    if(view_state < 9){
+    if(view_state < 11){
         if(spo2_value >= 95){
             textSprite.setTextColor(GREEN, TFT_BLACK);
         } else if(spo2_value < 95 && spo2_value > 90){
@@ -97,12 +97,16 @@ void drawValue(int bpm_value, int spo2_value, int glu_value, int batt_value, boo
         textSprite.drawString(String(bpm_value), 80, 87, 7);
     }
 
-    if(glu_value > 140){
+    if(glu_value > 160){
       textSprite.setTextColor(RED, TFT_BLACK);
-    } else if(glu_value <= 140 && glu_value > 90){
-      textSprite.setTextColor(GREEN, TFT_BLACK);
-    } else{
+    } else if(glu_value <= 160 && glu_value > 140){
       textSprite.setTextColor(YELLOW, TFT_BLACK);
+    } else if(glu_value <= 140 && glu_value > 100){
+      textSprite.setTextColor(GREEN, TFT_BLACK);
+    } else if(glu_value <= 100 && glu_value > 80){
+      textSprite.setTextColor(YELLOW, TFT_BLACK);
+    } else{
+      textSprite.setTextColor(RED, TFT_BLACK);
     }
     textSprite.drawString(String(glu_value), 80, 160, 7);
     textSprite.pushToSprite(&bgSprite, 0, 0, TFT_BLACK);

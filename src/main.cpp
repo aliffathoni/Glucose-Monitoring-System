@@ -17,7 +17,6 @@ void wakeup_reason()
     {
         case ESP_SLEEP_WAKEUP_EXT0 :
             Serial.println("Wakeup caused by external signal using RTC_IO");
-            if(offline_mode == false) counter++;
             break;
         default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
     }
@@ -27,14 +26,7 @@ void upload()
 {
   int dataMillis = millis();
   if(uid!=""){
-    String path = "/Data/" + uid + "/Hasil pengukuran/" + timeNow + "/";
-    if(counter < 10){
-      path+="00" + String(counter);
-    } else if(counter < 100){
-      path+="0" + String(counter);
-    } else{
-      path+=String(counter);
-    }
+    String path = "/Data/" + uid + "/Hasil pengukuran/Monitor";
     
     String path_bpm = path + "/Bpm/";
     bool sent_status = Firebase.setInt(fb, path_bpm, bpm);
@@ -42,7 +34,6 @@ void upload()
       Serial.println(fb.errorReason().c_str());
     } else{
       Serial.print("[" + String(millis())+"] ");
-      Serial.print("[" + String(counter)+"] ");
       Serial.println("BPM Data sent");
     }
 
@@ -52,7 +43,6 @@ void upload()
       Serial.println(fb.errorReason().c_str());
     } else{
       Serial.print("[" + String(millis())+"] ");
-      Serial.print("[" + String(counter)+"] ");
       Serial.println("SPO2 Data sent");
     }
 
@@ -62,53 +52,31 @@ void upload()
       Serial.println(fb.errorReason().c_str());
     } else{
       Serial.print("[" + String(millis())+"] ");
-      Serial.print("[" + String(counter)+"] ");
       Serial.println("Glucose Data sent");
     }
   }
 }
 
-void update_time()
-{
-  timeClient.update();
-  Serial.print("[" + String(millis())+"] ");
-  Serial.println("[T] "+timeClient.getFormattedDate());
-  
-  if(timeNow != timeClient.getFormattedDate()){
-    timeNow = timeClient.getFormattedDate();
-    counter = 1;
-  }
-}
-
 void update_data()
 {
-  int bpm_dump = pox.getHeartRate();
-  int spo_dump = pox.getSpO2();
-  
-  if(bpm_dump != 0 && spo_dump != 0){
-    dataCounter++;
-    bpm_rate+=bpm_dump;
-    spo_rate+=spo_dump;
-  }
-
-  if(millis() - lastUpdate > updateRoutine){    
-    bpm = (bpm_rate / dataCounter) * bpm_calibration;
-    spo2 = (spo_rate / dataCounter) * spo_calibration;
+  if(millis() - lastUpdate > updateRoutine){
+    bpm = pox.getHeartRate() * bpm_calibration;
+    spo2 = pox.getSpO2() * spo_calibration;
     glucose = (bpm * 140 / 120) * glu_calibration;
     fuzzy_result = fuzzy_glucose(glucose);
     batt = (analogReadMilliVolts(36));
 
+    if(bpm > 199) bpm = 199;
+    if(spo2 > 100) spo2 = 100;
+    if(glucose > 199) glucose = 199;
+
     Serial.print("[" + String(millis())+"] ");
-    Serial.printf("Total Data = %d || BPM = %d || SPO2 = %d% || Glucose = %d || Fuzzy Result = %s || Battery = %d\n", dataCounter, bpm, spo2, glucose, fuzzy_result, batt);
+    Serial.printf("BPM = %d || SPO2 = %d% || Glucose = %d || Fuzzy Result = %s || Battery = %d\n", bpm, spo2, glucose, fuzzy_result, batt);
     
     drawValue(bpm, spo2, glucose, batt, offline_mode);
 
-    dataCounter = 1;
-    bpm_rate = 0;
-    spo_rate = 0;
-    
     view_state++;
-    if(view_state > 18) view_state = 0;
+    if(view_state > 20) view_state = 0;
 
     lastUpdate = millis();
   }
@@ -121,23 +89,35 @@ void main_task(void *param)
       pox.update();
       update_data();
     } else{
-      if(offline_mode == false){
+      if(offline_mode == false && isDataError == false){
         pox.shutdown();
-        update_time();
-
-        if(glucose!=0 && spo2!=0){
-          upload();
-        }
+        
+        upload();
+        
+        vTaskDelay(2000);
       
         pox.resume();
       }
       
+      if(spo2 == 0 && bpm == 0){
+        isDataError = true;
+
+        Serial.print("[" + String(millis())+"] ");
+        Serial.println("No data provided, check your finger  placement");
+      } else{
+        isDataError = false;
+
+        Serial.print("[" + String(millis())+"] ");
+        Serial.println("Data Sent");
+      }
+
       update_state = true;
+      changeState = millis();
     }
 
     if(millis() - changeState > uploadRoutine){
       Serial.print("[" + String(millis())+"] ");
-      Serial.println("Setup Completed");
+      Serial.println("Upload State");
       update_state = false;
       changeState = millis();
     }
@@ -153,11 +133,6 @@ void sleep_task(void *param)
       vTaskSuspend(main_handle);
       
       drawSleep();
-      
-      pf.begin("credentials", false);
-      pf.putInt("counter", counter);
-      pf.putString("time", timeNow);
-      pf.end();
 
       rtc_gpio_pullup_en(GPIO_NUM_27);
       esp_sleep_enable_ext0_wakeup(GPIO_NUM_27, 0);
@@ -165,7 +140,12 @@ void sleep_task(void *param)
       Serial.print("[" + String(millis())+"] ");
       Serial.println("Enter Sleeping Mode In 2 Second...");
       
-      vTaskDelay(2000 / portTICK_PERIOD_MS);
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+
+      Serial.print("[" + String(millis())+"] ");
+      Serial.println("Enter Sleeping Mode In 1 Second...");
+      
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
       
       esp_deep_sleep_start();
     }
@@ -211,10 +191,6 @@ void setup() {
   Serial.println("Setup Completed");
  
   delay(1000);
-  
-  if(offline_mode == false){
-    update_time();
-  }
   
   if(pox.begin()){
     Serial.print("[" + String(millis())+"] ");

@@ -6,8 +6,6 @@
 #include <WiFiAP.h>
 #include <Preferences.h>
 #include <FirebaseESP32.h>  //Firebase Library
-#include <NTPClient.h>
-#include <WiFiUdp.h>
 #include <addons/TokenHelper.h>
 #include <addons/RTDBHelper.h>
 
@@ -17,9 +15,6 @@
 FirebaseData fb;
 FirebaseAuth auth;
 FirebaseConfig config;
-
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", 25200);
 
 Preferences pf;
 
@@ -36,8 +31,6 @@ void reconnect();
 void wifi_CONNECT(){
   
   pf.begin("credentials", false);
-  counter = pf.getInt("counter", 0);
-  timeNow = pf.getString("time", "Sunday, 1 January 1990");
   ssid = pf.getString("ssid", DEFAULT_SSID);
   pass = pf.getString("pass", DEFAULT_PASS);
   uid = pf.getString("uid", DEFAULT_UUID);
@@ -49,13 +42,6 @@ void wifi_CONNECT(){
     delay(1000);
     reconnect();
   } else {
-    Serial.print("[" + String(millis())+"] ");
-    Serial.print("Last counter : ");
-    Serial.println(counter);
-
-    Serial.print("[" + String(millis())+"] ");
-    Serial.print("Last upload : ");
-    Serial.println(timeNow);
     
     Serial.print("[" + String(millis())+"] ");
     Serial.print("UID : ");
@@ -84,7 +70,6 @@ void wifi_CONNECT(){
     Serial.print("[" + String(millis())+"] ");
     Serial.println(WiFi.localIP());
     
-    timeClient.begin();
     config.database_url = DATABASE_URL;
     config.signer.test_mode = true;
     Firebase.reconnectWiFi(true);
