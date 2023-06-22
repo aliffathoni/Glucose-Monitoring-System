@@ -31,7 +31,7 @@ void initTFT(){
     textSprite.createSprite(80, 160);
 }
 
-void drawValue(int bpm_value, int spo2_value, int glu_value, int batt_value, bool net_state){
+void drawValue(int bpm_value, int spo2_value, int glu_value, String glu_fuzzy, int batt_value, bool net_state){
     bgSprite.fillSprite(TFT_BLACK);
 
     imgSprite.fillSprite(TFT_BLACK);
@@ -58,10 +58,11 @@ void drawValue(int bpm_value, int spo2_value, int glu_value, int batt_value, boo
     textSprite.fillSprite(TFT_BLACK);
 
     textSprite.setTextDatum(TL_DATUM);
-    textSprite.setTextColor(TFT_ORANGE, TFT_BLACK);
-    if(view_state < 9){
+    if(view_state < 26){
+        textSprite.setTextColor(YELLOW, TFT_BLACK);
         textSprite.drawString("Oksigen", 3, 20, 2);
     } else{
+        textSprite.setTextColor(TFT_YELLOW, TFT_BLACK);
         textSprite.drawString("BPM", 3, 20, 2);
     }
     textSprite.setTextColor(TFT_PURPLE, TFT_BLACK);
@@ -71,16 +72,19 @@ void drawValue(int bpm_value, int spo2_value, int glu_value, int batt_value, boo
     textSprite.fillRect(3, 17, 74, 2, TFT_WHITE);
 
     textSprite.setTextDatum(BR_DATUM);
-    if(view_state < 11){
+    if(view_state < 26){
         if(spo2_value >= 95){
             textSprite.setTextColor(GREEN, TFT_BLACK);
-        } else if(spo2_value < 95 && spo2_value > 90){
+        } else if(spo2_value < 95 && spo2_value >= 90){
             textSprite.setTextColor(YELLOW, TFT_BLACK);
-        } else{
+        } else if(spo2_value < 90 && spo2_value > 0){
             textSprite.setTextColor(RED, TFT_BLACK);
+        } else{
+            textSprite.setTextColor(TFT_WHITE, TFT_BLACK);
         }
         
-        textSprite.drawString(String(spo2_value), 80, 87, 7);
+        if(spo2_value != 0) textSprite.drawString(String(spo2_value), 80, 87, 7);
+        else textSprite.drawString("--", 80, 87, 7);
     } else{
         if(bpm_value >= 120){
             textSprite.setTextColor(RED, TFT_BLACK);
@@ -90,25 +94,34 @@ void drawValue(int bpm_value, int spo2_value, int glu_value, int batt_value, boo
             textSprite.setTextColor(GREEN, TFT_BLACK);
         } else if(bpm_value < 70 && bpm_value >= 50){
             textSprite.setTextColor(YELLOW, TFT_BLACK);
-        } else{
+        } else if(bpm_value < 50 && bpm_value > 0){
             textSprite.setTextColor(RED, TFT_BLACK);
+        } else{
+            textSprite.setTextColor(TFT_WHITE, TFT_BLACK);
         }
         
-        textSprite.drawString(String(bpm_value), 80, 87, 7);
+        if(bpm_value != 0) textSprite.drawString(String(bpm_value), 80, 87, 7);
+        else textSprite.drawString("--", 80, 87, 7);
     }
 
-    if(glu_value > 160){
+    if(glu_fuzzy == "Tinggi"){
       textSprite.setTextColor(RED, TFT_BLACK);
-    } else if(glu_value <= 160 && glu_value > 140){
+    } else if(glu_fuzzy == "Rendah"){
       textSprite.setTextColor(YELLOW, TFT_BLACK);
-    } else if(glu_value <= 140 && glu_value > 100){
+    } else if(glu_fuzzy == "Normal"){
       textSprite.setTextColor(GREEN, TFT_BLACK);
-    } else if(glu_value <= 100 && glu_value > 80){
-      textSprite.setTextColor(YELLOW, TFT_BLACK);
-    } else{
+    } else if(glu_fuzzy == "Error"){
       textSprite.setTextColor(RED, TFT_BLACK);
+    } else{
+      textSprite.setTextColor(TFT_WHITE, TFT_BLACK);
     }
-    textSprite.drawString(String(glu_value), 80, 160, 7);
+
+    if(glu_value != 0){
+        textSprite.drawString(String(glu_value), 80, 160, 7);
+    } else{
+        textSprite.setTextColor(TFT_WHITE, TFT_BLACK);
+        textSprite.drawString("--", 80, 160, 7);
+    }
     textSprite.pushToSprite(&bgSprite, 0, 0, TFT_BLACK);
     
     bgSprite.pushSprite(0,0);
@@ -155,8 +168,7 @@ void drawError(){
 }
 
 void drawLogo(){
-    bgSprite.pushImage(0, 0, 80, 80, _3dp_logo); 
-    bgSprite.pushImage(0, 80, 80, 160, app_logo);
+    bgSprite.pushImage(0, 0, 80, 160, app_logo);
     bgSprite.pushSprite(0,0);
     delay(2000);
 }

@@ -73,11 +73,11 @@ void update_data()
     Serial.print("[" + String(millis())+"] ");
     Serial.printf("BPM = %d || SPO2 = %d% || Glucose = %d || Fuzzy Result = %s || Battery = %d\n", bpm, spo2, glucose, fuzzy_result, batt);
     
-    drawValue(bpm, spo2, glucose, batt, offline_mode);
+    drawValue(bpm, spo2, glucose, fuzzy_result, batt, offline_mode);
 
-    view_state++;
-    if(view_state > 20) view_state = 0;
-
+    if(view_state > 50) view_state = 0;
+    else view_state++;
+    
     lastUpdate = millis();
   }
 }
