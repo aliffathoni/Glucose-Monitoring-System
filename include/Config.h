@@ -8,9 +8,9 @@ String DEFAULT_PASS = "raddinii0711";
 String DEFAULT_UUID = "AV86BQf8DNZEhr5Uv7PiEHmkC4H3";
 // String DEFAULT_UUID = "YjrQiZOD0FXtYsXNOQHAE2vJ4pv2";
 
-const float bpm_calibration = 1.247;
-const float spo_calibration = 1.035;
-const float glu_calibration = 1.149;
+const float bpm_calibration = 1.0;
+const float spo_calibration = 1.0;
+const float glu_calibration = 1.0;
 
 String ssid, pass, uid;
 bool connection_status = false;
@@ -20,7 +20,7 @@ unsigned long changeState = 0;
 bool update_state = true;
 
 bool isDataError = true;
-int bpm, spo2, glucose, batt;
+int bpm, spo2, glucose, batt, bpm_rate;
 String fuzzy_result;
 
 int view_state = 0;

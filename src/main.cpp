@@ -62,18 +62,30 @@ void update_data()
   if(millis() - lastUpdate > updateRoutine){
     bpm = pox.getHeartRate() * bpm_calibration;
     spo2 = pox.getSpO2() * spo_calibration;
-    glucose = (bpm * 140 / 120) * glu_calibration;
+    glucose = ((bpm * 0.8518) + 40.708) * glu_calibration;
     fuzzy_result = fuzzy_glucose(glucose);
     batt = (analogReadMilliVolts(36));
+    
+    if(bpm_rate != 0 && bpm != 0){
+      if(bpm > 40 && bpm < 130){
+        bpm_rate = (bpm_rate + bpm) / 2;
+      }
+    } else{
+      bpm_rate = bpm;
+    }
 
-    if(bpm > 199) bpm = 199;
+    if(bpm_rate > 199) bpm_rate = 199;
     if(spo2 > 100) spo2 = 100;
-    if(glucose > 199) glucose = 199;
+    if(glucose > 199){
+      glucose = 199;
+    } else if(glucose < 42) {
+      glucose = 0;
+    }
 
     Serial.print("[" + String(millis())+"] ");
-    Serial.printf("BPM = %d || SPO2 = %d% || Glucose = %d || Fuzzy Result = %s || Battery = %d\n", bpm, spo2, glucose, fuzzy_result, batt);
+    Serial.printf("BPM = %d || SPO2 = %d% || Glucose = %d || Fuzzy Result = %s || Battery = %d\n", bpm_rate, spo2, glucose, fuzzy_result, batt);
     
-    drawValue(bpm, spo2, glucose, fuzzy_result, batt, offline_mode);
+    drawValue(bpm_rate, spo2, glucose, fuzzy_result, batt, offline_mode);
 
     if(view_state > 50) view_state = 0;
     else view_state++;
